@@ -1,45 +1,37 @@
-import fs from 'fs'
-import path from 'path'
-
-const CARDS_DIR = path.join(process.cwd(), 'data', 'cards')
-
-// Ensure directory exists
-function ensureDir() {
-  if (!fs.existsSync(CARDS_DIR)) {
-    fs.mkdirSync(CARDS_DIR, { recursive: true })
-  }
-}
+import { query, initDb } from './db'
 
 /**
- * Save a card to the file system.
+ * Save a card to the database.
  * @param {string} id - Unique card ID
  * @param {object} data - Card data (slides text + image base64)
  */
-export function saveCard(id, data) {
-  ensureDir()
-  const filePath = path.join(CARDS_DIR, `${id}.json`)
-  fs.writeFileSync(filePath, JSON.stringify(data), 'utf-8')
+export async function saveCard(id, data) {
+  await initDb()
+  await query('INSERT INTO cards (id, data) VALUES ($1, $2)', [
+    id,
+    JSON.stringify(data)
+  ])
 }
 
 /**
  * Get a card by ID.
  * @param {string} id
- * @returns {object|null}
+ * @returns {Promise<object|null>}
  */
-export function getCard(id) {
-  ensureDir()
-  const filePath = path.join(CARDS_DIR, `${id}.json`)
-  if (!fs.existsSync(filePath)) return null
-  const raw = fs.readFileSync(filePath, 'utf-8')
-  return JSON.parse(raw)
+export async function getCard(id) {
+  await initDb()
+  const result = await query('SELECT data FROM cards WHERE id = $1', [id])
+  if (result.rows.length === 0) return null
+  return result.rows[0].data
 }
 
 /**
  * Check if a card exists.
  * @param {string} id
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-export function cardExists(id) {
-  ensureDir()
-  return fs.existsSync(path.join(CARDS_DIR, `${id}.json`))
+export async function cardExists(id) {
+  await initDb()
+  const result = await query('SELECT 1 FROM cards WHERE id = $1', [id])
+  return result.rows.length > 0
 }

@@ -12,9 +12,12 @@ export async function POST(request) {
     }
 
     const id = nanoid(8)
-    saveCard(id, data)
+    await saveCard(id, data)
 
-    const baseUrl = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000'
+    const baseUrl =
+      request.headers.get('x-forwarded-host') ||
+      request.headers.get('host') ||
+      'localhost:3000'
     const protocol = request.headers.get('x-forwarded-proto') || 'http'
     const url = `${protocol}://${baseUrl}/v/${id}`
 
